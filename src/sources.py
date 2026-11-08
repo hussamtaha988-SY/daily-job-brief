@@ -68,7 +68,6 @@ class Job:
             "score": round(self.score),
             "family": self.family,
             "matched_skills": self.matched_skills,
-            "description": self.description[:4000],
             "reasons": self.reasons,
         }
 
