@@ -1,0 +1,461 @@
+# ============================================================
+# Daily Job Brief — configuration
+# Zero-cost: public job APIs + LinkedIn public search + Gmail SMTP.
+# No personal contact details here (this repo is public).
+# Recipient address lives in GitHub Secrets (DIGEST_TO).
+# ============================================================
+
+settings:
+  timezone: "Asia/Dubai"
+  send_time_local: "05:00"          # informational; cron in the workflow controls the run
+  hours_window: 48                  # Gulf: only jobs posted within this window
+  remote_hours_window: 168          # remote boards post less often: 7 days
+  max_items: 20                     # total jobs per issue
+  max_gulf: 12                      # cap for Gulf onsite/hybrid
+  max_remote: 8                     # cap for remote worldwide
+  max_per_company: 2                # avoid one employer filling the brief
+  min_score: 30                     # relevance floor (0-100)
+  request_timeout: 25
+  linkedin_pause: 2.5               # seconds between LinkedIn calls (avoid HTTP 429)
+  linkedin_retries: 2               # retries with backoff when rate-limited
+  detail_limit: 26                  # top candidates to open for full description + seniority
+  applied_file: "data/applied_ids.json"   # jobs already applied to — never shown again
+  seen_file: "data/seen_ids.json"         # jobs already sent to you — never repeated
+  repeat_suppression: true
+  company_board_hours_window: 336   # company boards keep ads open for weeks: 14 days
+  detail_pause: 4.0                 # slower pacing for the job-detail calls
+  detail_cooldown: 15               # rest after the search phase before opening details
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+
+email:
+  subject_prefix: "فرص العمل اليومية | Daily Job Brief"
+  from_name: "Daily Job Brief"
+
+# ---- Candidate profile (derived from the CV, no contact details) ----
+profile:
+  seniority: mid                    # 3-7 years
+  years_experience: 6
+  base_country: "United Arab Emirates"
+  languages: ["Arabic", "English"]
+  bilingual_edge: true              # Arabic+English is a differentiator
+
+  # Job families, highest weight first. `titles` are matched against the job title.
+  families:
+    admin:
+      label_ar: "إدارة ومساندة تنفيذية"
+      label_en: "Administration & Executive Support"
+      weight: 10
+      titles:
+        - administrative officer
+        - administration officer
+        - administrative assistant
+        - admin assistant
+        - administrative coordinator
+        - admin coordinator
+        - office administrator
+        - office administrator
+        - office coordinator
+        - office manager
+        - executive assistant
+        - personal assistant
+        - executive secretary
+        - administrative secretary
+        - office secretary
+        - team assistant
+        - business support officer
+        - administration assistant
+    legal_docs:
+      label_ar: "قانوني ومستندات وعقود"
+      label_en: "Legal, Contracts & Documents"
+      weight: 10
+      titles:
+        - legal assistant
+        - legal officer
+        - legal administrator
+        - legal secretary
+        - legal counsel assistant
+        - paralegal
+        - contracts administrator
+        - contract administrator
+        - contracts officer
+        - contracts coordinator
+        - legal translator
+        - document controller
+        - documents controller
+        - documentation officer
+        - documentation specialist
+        - records officer
+        - records administrator
+        - archivist
+        - corporate services officer
+        - corporate services assistant
+        - business setup consultant
+        - business setup officer
+        - company secretary
+        - compliance assistant
+        - compliance officer
+        - public relations officer
+        - pro officer
+        - government relations officer
+        - government liaison officer
+    language:
+      label_ar: "ترجمة وتحرير ولغات"
+      label_en: "Translation, Editing & Languages"
+      weight: 9
+      titles:
+        - translator
+        - translation officer
+        - translation specialist
+        - translation coordinator
+        - arabic translator
+        - english translator
+        - interpreter
+        - interpreting
+        - bilingual secretary
+        - bilingual assistant
+        - proofreader
+        - copy editor
+        - content editor
+        - editor
+        - linguist
+        - localization specialist
+        - localisation specialist
+        - subtitler
+        - transcriptionist
+        - quality control officer
+        - quality assurance officer
+        - translation
+        - writer
+        - copywriter
+        - content writer
+        - technical writer
+        - content specialist
+        - content reviewer
+        - content moderator
+        - editorial assistant
+        - publishing assistant
+        - language specialist
+        - language assistant
+        - communications coordinator
+        - communications officer
+    coordination:
+      label_ar: "تنسيق ومتابعة عملاء"
+      label_en: "Client & Operations Coordination"
+      weight: 7
+      titles:
+        - client coordinator
+        - client relations officer
+        - client services officer
+        - client support officer
+        - customer service officer
+        - customer relations officer
+        - operations coordinator
+        - operations officer
+        - project coordinator
+        - program coordinator
+        - programme coordinator
+        - scheduling coordinator
+        - service delivery coordinator
+
+  # Skills used to score the job description / title.
+  skills:
+    - moa
+    - poa
+    - noc
+    - memorandum of association
+    - power of attorney
+    - notarial
+    - corporate documentation
+    - contract translation
+    - legal terminology
+    - translation
+    - interpreting
+    - proofreading
+    - quality assurance
+    - document control
+    - records management
+    - archiving
+    - business correspondence
+    - client coordination
+    - calendar management
+    - meeting scheduling
+    - ms office
+    - excel
+    - outlook
+    - confidentiality
+    - arabic
+    - english
+    - bilingual
+
+  # Excluded because they are above the target seniority.
+  exclude_seniority:
+    - senior
+    - "sr."
+    - "sr "
+    - lead
+    - principal
+    - head of
+    - "head,"
+    - director
+    - chief
+    - "vp"
+    - vice president
+    - "c-level"
+    - "gm "
+    - general manager
+    - managing
+    - partner
+    - "intern"
+    - internship
+    - trainee
+    - apprenticeship
+    - fresher
+    - "graduate trainee"
+    - volunteer
+    - unpaid
+
+  # Roles restricted by nationality — the candidate is not a GCC national.
+  exclude_nationality:
+    - uae national
+    - uae nationals
+    - emirati
+    - emiratis
+    - local national
+    - gcc national
+    - gcc nationals
+    - saudi national
+    - saudis only
+    - qatari national
+    - kuwaiti national
+    - bahraini national
+    - omani national
+    - nationals only
+    - citizens only
+
+  # Remote jobs restricted to a country/region the candidate cannot work from.
+  # The candidate works in Arabic + English only. A role naming another
+  # working language in its title is not a fit.
+  exclude_languages:
+    - spanish
+    - gujarati
+    - malayalam
+    - farsi
+    - persian
+    - hindi
+    - urdu
+    - punjabi
+    - tamil
+    - telugu
+    - bengali
+    - marathi
+    - kannada
+    - turkish
+    - russian
+    - ukrainian
+    - polish
+    - german
+    - french
+    - italian
+    - portuguese
+    - dutch
+    - swedish
+    - norwegian
+    - danish
+    - finnish
+    - greek
+    - hebrew
+    - chinese
+    - mandarin
+    - cantonese
+    - japanese
+    - korean
+    - vietnamese
+    - thai
+    - indonesian
+    - malay
+    - tagalog
+    - filipino
+    - amharic
+    - somali
+    - swahili
+    - kurdish
+    - armenian
+    - romanian
+    - hungarian
+    - czech
+    - sinhala
+    - sinhalese
+    - singhalese
+    - cinghalese
+    - pashto
+    - dari
+    - tigrinya
+    - tigrigna
+    - oromo
+    - hausa
+    - yoruba
+    - igbo
+    - zulu
+    - afrikaans
+    - albanian
+    - serbian
+    - croatian
+    - bosnian
+    - slovenian
+    - slovak
+    - bulgarian
+    - lithuanian
+    - latvian
+    - estonian
+    - georgian
+    - azerbaijani
+    - azeri
+    - kazakh
+    - uzbek
+    - turkmen
+    - mongolian
+    - nepali
+    - burmese
+    - khmer
+    - lao
+    - hmong
+    - catalan
+    - basque
+    - maltese
+    - icelandic
+    - welsh
+    - irish
+    - yiddish
+    - berber
+    - tamazight
+    - assyrian
+    - syriac
+    - mandarin chinese
+
+  remote_blocked_regions:
+    - usa
+    - "u.s."
+    - "us only"
+    - "united states"
+    - canada
+    - "uk only"
+    - "united kingdom"
+    - europe only
+    - "eu only"
+    - india
+    - philippines
+    - pakistan
+    - nigeria
+    - kenya
+    - "south africa"
+    - brazil
+    - mexico
+    - argentina
+    - latam
+    - "latin america"
+    - australia
+    - "new zealand"
+    - japan
+    - korea
+    - china
+    - singapore only
+    - ukraine
+    - poland
+    - germany only
+    - "north america"
+
+  remote_allowed_regions:
+    - worldwide
+    - anywhere
+    - global
+    - "all countries"
+    - emea
+    - "middle east"
+    - "united arab emirates"
+    - uae
+    - dubai
+    - "remote (global)"
+    - international
+
+# ---- Gulf search targets (LinkedIn public search) ----
+gulf_locations:
+  - {name: "United Arab Emirates", weight: 10, pages: 2}
+  - {name: "Saudi Arabia",         weight: 7,  pages: 2}
+  - {name: "Qatar",                weight: 6,  pages: 1}
+  - {name: "Kuwait",               weight: 5,  pages: 1}
+  - {name: "Bahrain",              weight: 5,  pages: 1}
+  - {name: "Oman",                 weight: 5,  pages: 1}
+
+# One OR-query per location keeps the request count low, which avoids
+# LinkedIn HTTP 429 rate limiting.
+gulf_query: 'administrative OR "administrative assistant" OR translator OR translation OR paralegal OR "legal assistant" OR "document controller" OR "office administrator" OR "executive assistant"'
+gulf_tpr: "r86400"                  # last 24 hours
+
+remote_query: 'translator OR translation OR "administrative assistant" OR "document controller" OR "legal assistant" OR proofreader OR "content writer"'
+remote_tpr: "r604800"               # last 7 days
+remote_locations:
+  - "Middle East"
+  - "Worldwide"
+
+# ---- Free job sources ----
+sources:
+  linkedin:
+    enabled: true
+    gulf: true
+    remote: true
+    details: true                   # open the job page for verified seniority + description
+  greenhouse:
+    enabled: true
+  lever:
+    enabled: true
+  remotive:
+    enabled: true
+    url: "https://remotive.com/api/remote-jobs?limit=100"
+  remoteok:
+    enabled: true
+    url: "https://remoteok.com/api"
+  himalayas:
+    enabled: true
+    url: "https://himalayas.app/jobs/api?limit=100"
+  jobicy:
+    enabled: true
+    url: "https://jobicy.com/api/v2/remote-jobs?count=50"
+  arbeitnow:
+    enabled: true
+    url: "https://www.arbeitnow.com/api/job-board-api"
+  weworkremotely:
+    enabled: true
+    feeds:
+      - "https://weworkremotely.com/categories/remote-customer-support-jobs.rss"
+      - "https://weworkremotely.com/categories/remote-writing-jobs.rss"
+      - "https://weworkremotely.com/categories/remote-management-and-finance-jobs.rss"
+      - "https://weworkremotely.com/categories/remote-all-other-jobs.rss"
+
+# ---- Direct company career boards (Gulf) --------------------------------
+# Stable, key-free, and not rate-limited. Reused from the earlier
+# GulfCareer platform; only boards that actually list Gulf roles are kept.
+company_boards:
+  greenhouse:
+    - {slug: "tamara",    name: "Tamara"}
+    - {slug: "careem",    name: "Careem"}
+    - {slug: "deliveroo", name: "Deliveroo"}
+  lever:
+    - {slug: "aldar",     name: "Aldar Properties"}
+
+# ---- Manual search links -------------------------------------------------
+# Bayt / GulfTalent / Naukrigulf / Indeed block automated access (HTTP 403),
+# so instead of pretending to scrape them we hand over a ready-made search
+# link for each. One click, already filtered for your role and location.
+portal_links:
+  - name: "Bayt.com"
+    url: "https://www.bayt.com/en/uae/jobs/administrative-jobs/"
+  - name: "GulfTalent"
+    url: "https://www.gulftalent.com/uae/jobs/title/administration"
+  - name: "Naukrigulf"
+    url: "https://www.naukrigulf.com/administrative-jobs-in-uae"
+  - name: "Dubizzle Jobs"
+    url: "https://dubai.dubizzle.com/jobs/administration/"
+  - name: "LinkedIn — Easy Apply"
+    url: "https://www.linkedin.com/jobs/search/?keywords=%22administrative%20officer%22%20OR%20%22document%20controller%22%20OR%20translator&location=United%20Arab%20Emirates&f_TPR=r86400&f_AL=true"
+  - name: "LinkedIn — منشورات التوظيف"
+    url: "https://www.linkedin.com/search/results/content/?keywords=%28%22administrative%22%20OR%20%22translator%22%29%20AND%20%28%22Dubai%22%20OR%20%22UAE%22%29%20AND%20%28%22hiring%22%20OR%20%22send%20your%20CV%22%20OR%20%22%D8%AA%D9%88%D8%B8%D9%8A%D9%81%22%29&sortBy=%22date_posted%22"

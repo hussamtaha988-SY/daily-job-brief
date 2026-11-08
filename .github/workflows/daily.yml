@@ -1,0 +1,92 @@
+name: Daily Job Brief
+
+on:
+  schedule:
+    # 01:00 UTC = 05:00 Asia/Dubai (UTC+4). GitHub may delay a few minutes.
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Generate only, do not send email"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+permissions:
+  contents: write   # needed only to save the "already sent" job-ID history
+
+concurrency:
+  group: daily-job-brief
+  cancel-in-progress: false
+
+jobs:
+  brief:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install system libraries (PDF + Arabic fonts)
+        timeout-minutes: 8
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get update \
+            -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=30 \
+            -o Acquire::https::Timeout=30
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=3 \
+            libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 \
+            fonts-noto-core fonts-dejavu-core
+          fc-cache -f >/dev/null 2>&1 || true
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate and send job brief
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python src/main.py --dry-run
+          else
+            python src/main.py
+          fi
+
+      # Save which job IDs were sent, so tomorrow's issue contains only new
+      # vacancies. Only public job IDs are stored — never personal data.
+      - name: Save job history
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        continue-on-error: true
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/seen_ids.json data/applied_ids.json || true
+          if git diff --staged --quiet; then
+            echo "No history changes."
+          else
+            git commit -m "chore: update job history [skip ci]"
+            git pull --rebase --autostash || true
+            git push || echo "Push failed; the brief was still sent."
+          fi
+
+      # Artifacts in a PUBLIC repo are publicly downloadable.
+      # Leave this commented unless you want each issue published.
+      # - name: Upload issue (optional, public)
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: jobs-${{ github.run_id }}
+      #     path: out/
+      #     retention-days: 14
