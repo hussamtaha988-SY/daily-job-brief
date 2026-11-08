@@ -42,7 +42,7 @@
   <div class="masthead">
     <h1>فرص العمل اليومية</h1>
     <div class="en">Daily Job Brief — Administration · Legal &amp; Documents · Translation</div>
-    <div class="meta">{{ date }} · {{ generated }} · {{ count }} فرصة ({{ gulf_count }} خليج · {{ remote_count }} عن بُعد)</div>
+    <div class="meta">{{ date }} · {{ generated }} · {{ count }} فرصة ({{ gulf_count }} خليج · {{ remote_count }} عن بُعد{% if translation_count %} · {{ translation_count }} ترجمة{% endif %})</div>
     <div class="meta">مفلترة على: خبرة متوسطة 3–7 سنوات · عربي/إنجليزي · بدون وظائف المواطنين فقط</div>
   </div>
 
@@ -75,6 +75,7 @@
       <div class="jmeta"><span class="co">{{ j.company }}</span>{% if j.location %} · {{ j.location }}{% endif %}{% if j.salary %} · {{ j.salary }}{% endif %}</div>
       <div class="badges">
         <span class="badge score">{{ j.score }}%</span>
+        {% if j.family == 'translation' %}<span class="badge" style="background:#0f766e;color:#fff">ترجمة احترافية</span>{% endif %}
         <span class="badge {% if j.work_mode == 'remote' %}remote{% else %}mode{% endif %}">{{ j.mode_ar }} / {{ j.work_mode }}</span>
         {% if j.posted %}<span class="badge">{{ j.posted }}</span>{% endif %}
         {% if j.seniority_ar %}<span class="badge">{{ j.seniority_ar }}</span>{% endif %}

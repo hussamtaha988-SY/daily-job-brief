@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 
 import logging
 from pathlib import Path
@@ -12,6 +13,36 @@ log = logging.getLogger("render")
 
 # Static Arabic glossary — no AI, no API key, no quota.
 TITLE_AR = {
+    "post-editor": "محرر لاحق للترجمة الآلية",
+    "post editor": "محرر لاحق للترجمة الآلية",
+    "conference interpreter": "مترجم مؤتمرات",
+    "simultaneous interpreter": "مترجم فوري",
+    "consecutive interpreter": "مترجم تتبعي",
+    "community interpreter": "مترجم مجتمعي",
+    "legal interpreter": "مترجم قانوني",
+    "medical interpreter": "مترجم طبي",
+    "translation project manager": "مدير مشاريع الترجمة",
+    "translation manager": "مدير الترجمة",
+    "translation reviewer": "مراجع ترجمة",
+    "translation reviser": "منقّح ترجمة",
+    "translation editor": "محرر ترجمة",
+    "translation specialist": "أخصائي ترجمة",
+    "translation coordinator": "منسق ترجمة",
+    "localization project manager": "مدير مشاريع التعريب",
+    "localization manager": "مدير التعريب",
+    "localization editor": "محرر تعريب",
+    "terminologist": "أخصائي مصطلحات",
+    "terminology specialist": "أخصائي مصطلحات",
+    "transcreator": "أخصائي صياغة إبداعية",
+    "legal translator": "مترجم قانوني",
+    "medical translator": "مترجم طبي",
+    "technical translator": "مترجم تقني",
+    "literary translator": "مترجم أدبي",
+    "freelance translator": "مترجم مستقل",
+    "arabic translator": "مترجم عربي",
+    "subtitle editor": "محرر ترجمة مرئية",
+    "captioner": "كاتب تعليقات نصية",
+    "reviser": "منقّح",
     "administrative officer": "مسؤول إداري",
     "administration officer": "مسؤول إداري",
     "administrative assistant": "مساعد إداري",
@@ -101,6 +132,32 @@ TITLE_AR = {
 MODE_AR = {"onsite": "حضوري", "hybrid": "هجين", "remote": "عن بُعد"}
 REGION_AR = {"gulf": "الخليج", "remote": "عن بُعد"}
 SKILL_AR = {
+    "trados": "ترادوس",
+    "sdl trados": "SDL Trados",
+    "memoq": "memoQ",
+    "phrase": "Phrase",
+    "memsource": "Memsource",
+    "wordfast": "Wordfast",
+    "across": "Across",
+    "cat tools": "أدوات الترجمة بمساعدة الحاسوب",
+    "translation memory": "ذاكرة الترجمة",
+    "terminology management": "إدارة المصطلحات",
+    "glossary": "المسارد المصطلحية",
+    "subtitling": "الترجمة المرئية",
+    "post-editing": "التحرير اللاحق للترجمة الآلية",
+    "mtpe": "التحرير اللاحق للترجمة الآلية",
+    "localization": "التعريب والأقلمة",
+    "language quality assurance": "ضبط الجودة اللغوية",
+    "simultaneous interpreting": "الترجمة الفورية",
+    "consecutive interpreting": "الترجمة التتبعية",
+    "conference interpreting": "ترجمة المؤتمرات",
+    "legal translation": "الترجمة القانونية",
+    "medical translation": "الترجمة الطبية",
+    "technical translation": "الترجمة التقنية",
+    "literary translation": "الترجمة الأدبية",
+    "transcreation": "الصياغة الإبداعية",
+    "english to arabic": "من الإنجليزية إلى العربية",
+    "arabic to english": "من العربية إلى الإنجليزية",
     "translation": "ترجمة", "interpreting": "ترجمة فورية", "arabic": "عربي",
     "english": "إنجليزي", "bilingual": "ثنائي اللغة", "proofreading": "تدقيق",
     "quality assurance": "تأكيد الجودة", "document control": "ضبط المستندات",
@@ -134,6 +191,15 @@ SENIORITY_AR = {
 }
 
 
+_CJK = re.compile(r"[\u3000-\u303f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef\uac00-\ud7af]+")
+
+
+def readable_company(name: str) -> str:
+    """Drop Chinese/Japanese/Korean glyphs the reader cannot use; keep the rest."""
+    cleaned = _CJK.sub(" ", name or "")
+    return re.sub(r"\s{2,}", " ", cleaned).strip(" -|,·") or (name or "")
+
+
 def build_items(jobs: list[Job], cfg: dict) -> list[dict]:
     families = cfg["profile"]["families"]
     items = []
@@ -141,6 +207,7 @@ def build_items(jobs: list[Job], cfg: dict) -> list[dict]:
         fam = families.get(j.family, {})
         items.append({
             **j.public_dict(),
+            "company": readable_company(j.company),
             "title_ar": title_arabic(j.title),
             "family_ar": fam.get("label_ar", ""),
             "family_en": fam.get("label_en", ""),
@@ -165,6 +232,7 @@ def render_html(items: list[dict], cfg: dict, template_dir: str | Path,
         generated=local_datetime(tz),
         items=items, gulf=gulf, remote=remote,
         count=len(items), gulf_count=len(gulf), remote_count=len(remote),
+        translation_count=sum(1 for i in items if i.get("family") == "translation"),
         subject_prefix=cfg.get("email", {}).get("subject_prefix", "Daily Job Brief"),
         send_time=cfg["settings"].get("send_time_local", "05:00"),
         failed_sources=failed_sources or [],

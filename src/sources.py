@@ -48,6 +48,7 @@ class Job:
     reasons: list[str] = field(default_factory=list)
     seniority: str = ""            # LinkedIn "Seniority level" (verified)
     employment_type: str = ""      # Full-time / Contract / Part-time
+    window_hours: int = 0          # per-search freshness override (0 = use defaults)
 
 
     def public_dict(self) -> dict:
@@ -67,6 +68,7 @@ class Job:
             "score": round(self.score),
             "family": self.family,
             "matched_skills": self.matched_skills,
+            "description": self.description[:4000],
             "reasons": self.reasons,
         }
 
@@ -103,7 +105,7 @@ def _session(settings: dict) -> requests.Session:
 # ------------------------------------------------------------------
 def fetch_linkedin(keyword: str, settings: dict, location: str = "",
                    remote: bool = False, start: int = 0,
-                   tpr: str = "r86400") -> list[Job]:
+                   tpr: str = "r86400", window_hours: int = 0) -> list[Job]:
     params = {
         "keywords": keyword,
         "f_TPR": tpr,
@@ -173,6 +175,7 @@ def fetch_linkedin(keyword: str, settings: dict, location: str = "",
             source="LinkedIn", work_mode=mode,
             region="remote" if remote else "gulf",
             posted=posted, id=f"li-{jid}", country=location,
+            window_hours=window_hours,
         ))
     return jobs
 
@@ -206,6 +209,26 @@ def fetch_linkedin_all(cfg: dict) -> list[Job]:
             out.extend(jobs)
             calls += 1
             log.info("LinkedIn remote %s -> %d", loc, len(jobs))
+            time.sleep(pause)
+
+    # Dedicated professional-translation sweep. Separate query so translator
+    # and interpreter roles are not crowded out by administrative postings.
+    if src.get("translation", True) and cfg.get("translation_query"):
+        tq = cfg["translation_query"]
+        ttpr = cfg.get("translation_tpr", "r604800")
+        twin = int(settings.get("translation_hours_window", 168))
+        for loc in cfg.get("translation_gulf_locations", []):
+            jobs = fetch_linkedin(tq, settings, location=loc, tpr=ttpr, window_hours=twin)
+            out.extend(jobs)
+            calls += 1
+            log.info("LinkedIn translation %s -> %d", loc, len(jobs))
+            time.sleep(pause)
+        for loc in cfg.get("translation_remote_locations", []):
+            jobs = fetch_linkedin(tq, settings, location=loc, remote=True, tpr=ttpr,
+                                  window_hours=twin)
+            out.extend(jobs)
+            calls += 1
+            log.info("LinkedIn translation remote %s -> %d", loc, len(jobs))
             time.sleep(pause)
 
     log.info("LinkedIn total: %d raw jobs from %d calls", len(out), calls)

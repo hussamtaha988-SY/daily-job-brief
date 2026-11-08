@@ -174,7 +174,9 @@ def score_job(job: Job, cfg: dict) -> Job:
             return job
 
     if job.posted:
-        if job.source.startswith("موقع الشركة"):
+        if job.window_hours:
+            window = int(job.window_hours)
+        elif job.source.startswith("موقع الشركة"):
             window = int(settings.get("company_board_hours_window", 336))
         elif job.region == "remote":
             window = int(settings.get("remote_hours_window", 168))
@@ -332,17 +334,38 @@ def select(jobs: list[Job], cfg: dict) -> list[Job]:
     chosen: list[Job] = []
     counts = {"gulf": 0, "remote": 0}
 
-    for j in pool:
+    def take(j: Job) -> bool:
         if len(chosen) >= max_total:
-            break
-        if counts.get(j.region, 0) >= (max_gulf if j.region == "gulf" else max_remote):
-            continue
+            return False
+        cap = max_gulf if j.region == "gulf" else max_remote
+        if counts.get(j.region, 0) >= cap:
+            return False
         ck = normalize(j.company)[:40]
         if per_company[ck] >= max_company:
-            continue
+            return False
         chosen.append(j)
         per_company[ck] += 1
         counts[j.region] = counts.get(j.region, 0) + 1
+        return True
+
+    # Pass 1 — reserve seats for professional translation / interpreting so a
+    # flood of administrative vacancies cannot push them out of the issue.
+    reserved = int(settings.get("min_translation", 0))
+    if reserved:
+        picked = 0
+        for j in pool:
+            if picked >= reserved:
+                break
+            if j.family == "translation" and take(j):
+                picked += 1
+
+    # Pass 2 — fill the remaining seats by score across all families.
+    for j in pool:
+        if len(chosen) >= max_total:
+            break
+        if j in chosen:
+            continue
+        take(j)
 
     # Gulf first (the candidate lives in Dubai), then remote; score order inside.
     chosen.sort(key=lambda x: (0 if x.region == "gulf" else 1, -x.score))

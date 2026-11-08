@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from mailer import plain_text, send_email
 from matching import dedupe, remember, rejection_stats, score_job, select
+from cover_letters import build_pack
 from render import build_items, render_html, render_pdf
 from sources import enrich_with_details, fetch_all
 from utils import ensure_dir, env, load_config, local_date
@@ -97,6 +98,12 @@ def main() -> int:
     if pdf_ok:
         log.info("PDF saved: %s", pdf_path)
 
+    pack_path = None
+    try:
+        pack_path = build_pack(items, cfg, out_dir / f"application-pack-{date_str}.docx", date_str)
+    except Exception as e:
+        log.warning("Application pack failed (brief still sent): %s", e)
+
     json_path = out_dir / f"jobs-{date_str}.json"
     json_path.write_text(json.dumps({
         "date": date_str,
@@ -114,6 +121,8 @@ def main() -> int:
     attachments = [html_path]
     if pdf_ok:
         attachments.append(pdf_path)
+    if pack_path:
+        attachments.append(pack_path)
     try:
         from premailer import transform
         email_html = transform(html, keep_style_tags=False, strip_important=False)

@@ -14,6 +14,7 @@ settings:
   max_gulf: 12                      # cap for Gulf onsite/hybrid
   max_remote: 8                     # cap for remote worldwide
   max_per_company: 2                # avoid one employer filling the brief
+  min_translation: 4                # reserved slots for professional translation/interpreting
   min_score: 30                     # relevance floor (0-100)
   request_timeout: 25
   linkedin_pause: 2.5               # seconds between LinkedIn calls (avoid HTTP 429)
@@ -23,6 +24,7 @@ settings:
   seen_file: "data/seen_ids.json"         # jobs already sent to you — never repeated
   repeat_suppression: true
   company_board_hours_window: 336   # company boards keep ads open for weeks: 14 days
+  translation_hours_window: 168     # translation vacancies are scarcer: 7 days
   detail_pause: 4.0                 # slower pacing for the job-detail calls
   detail_cooldown: 15               # rest after the search phase before opening details
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
@@ -41,6 +43,64 @@ profile:
 
   # Job families, highest weight first. `titles` are matched against the job title.
   families:
+    translation:
+      label_ar: "ترجمة احترافية وترجمة فورية"
+      label_en: "Professional Translation & Interpreting"
+      weight: 11
+      titles:
+        - translator
+        - arabic translator
+        - english translator
+        - legal translator
+        - medical translator
+        - technical translator
+        - literary translator
+        - freelance translator
+        - translator editor
+        - translation specialist
+        - translation officer
+        - translation coordinator
+        - translation project manager
+        - translation manager
+        - translation team lead
+        - translation reviewer
+        - translation reviser
+        - translation editor
+        - translation quality
+        - interpreter
+        - conference interpreter
+        - simultaneous interpreter
+        - consecutive interpreter
+        - community interpreter
+        - legal interpreter
+        - medical interpreter
+        - arabic interpreter
+        - interpreting officer
+        - localization specialist
+        - localisation specialist
+        - localization project manager
+        - localization manager
+        - localization editor
+        - subtitler
+        - subtitling specialist
+        - subtitle editor
+        - captioner
+        - post-editor
+        - post editor
+        - machine translation
+        - translation reviewer arabic
+        - reviser
+        - terminologist
+        - terminology specialist
+        - transcreator
+        - transcreation specialist
+        - arabic linguist
+        - bilingual linguist
+        - language quality assurance
+        - translation quality assurance
+        - proofreader
+        - copy editor
+        - bilingual editor
     admin:
       label_ar: "إدارة ومساندة تنفيذية"
       label_en: "Administration & Executive Support"
@@ -79,7 +139,6 @@ profile:
         - contract administrator
         - contracts officer
         - contracts coordinator
-        - legal translator
         - document controller
         - documents controller
         - documentation officer
@@ -99,32 +158,18 @@ profile:
         - government relations officer
         - government liaison officer
     language:
-      label_ar: "ترجمة وتحرير ولغات"
-      label_en: "Translation, Editing & Languages"
-      weight: 9
+      label_ar: "تحرير وكتابة ومحتوى"
+      label_en: "Editing, Writing & Content"
+      weight: 8
       titles:
-        - translator
-        - translation officer
-        - translation specialist
-        - translation coordinator
-        - arabic translator
-        - english translator
-        - interpreter
-        - interpreting
         - bilingual secretary
         - bilingual assistant
-        - proofreader
-        - copy editor
         - content editor
         - editor
         - linguist
-        - localization specialist
-        - localisation specialist
-        - subtitler
         - transcriptionist
         - quality control officer
         - quality assurance officer
-        - translation
         - writer
         - copywriter
         - content writer
@@ -159,6 +204,32 @@ profile:
 
   # Skills used to score the job description / title.
   skills:
+    - trados
+    - sdl trados
+    - memoq
+    - phrase
+    - memsource
+    - wordfast
+    - across
+    - cat tools
+    - translation memory
+    - terminology management
+    - glossary
+    - subtitling
+    - post-editing
+    - mtpe
+    - localization
+    - language quality assurance
+    - simultaneous interpreting
+    - consecutive interpreting
+    - conference interpreting
+    - legal translation
+    - medical translation
+    - technical translation
+    - literary translation
+    - transcreation
+    - english to arabic
+    - arabic to english
     - moa
     - poa
     - noc
@@ -168,8 +239,6 @@ profile:
     - corporate documentation
     - contract translation
     - legal terminology
-    - translation
-    - interpreting
     - proofreading
     - quality assurance
     - document control
@@ -439,8 +508,10 @@ company_boards:
     - {slug: "tamara",    name: "Tamara"}
     - {slug: "careem",    name: "Careem"}
     - {slug: "deliveroo", name: "Deliveroo"}
+    - {slug: "lokalise",  name: "Lokalise"}
   lever:
     - {slug: "aldar",     name: "Aldar Properties"}
+    - {slug: "rws",       name: "RWS (Trados)"}
 
 # ---- Manual search links -------------------------------------------------
 # Bayt / GulfTalent / Naukrigulf / Indeed block automated access (HTTP 403),
@@ -459,3 +530,134 @@ portal_links:
     url: "https://www.linkedin.com/jobs/search/?keywords=%22administrative%20officer%22%20OR%20%22document%20controller%22%20OR%20translator&location=United%20Arab%20Emirates&f_TPR=r86400&f_AL=true"
   - name: "LinkedIn — منشورات التوظيف"
     url: "https://www.linkedin.com/search/results/content/?keywords=%28%22administrative%22%20OR%20%22translator%22%29%20AND%20%28%22Dubai%22%20OR%20%22UAE%22%29%20AND%20%28%22hiring%22%20OR%20%22send%20your%20CV%22%20OR%20%22%D8%AA%D9%88%D8%B8%D9%8A%D9%81%22%29&sortBy=%22date_posted%22"
+
+# ---- Dedicated professional-translation search --------------------------
+# Translation vacancies are fewer than admin ones, so they get their own
+# query and a 7-day window, plus reserved slots in the issue (min_translation).
+translation_query: 'translator OR interpreter OR "localization specialist" OR subtitler OR "translation project manager" OR "post-editor" OR proofreader'
+translation_tpr: "r604800"          # last 7 days
+translation_gulf_locations:
+  - "United Arab Emirates"
+  - "Saudi Arabia"
+translation_remote_locations:
+  - "Middle East"
+  - "Worldwide"
+
+# ---- Per-vacancy application pack ---------------------------------------
+# Reused from the earlier GulfCareer platform. Pure templates: no AI, no key,
+# no cost. Contact details come from Secrets (CV_NAME, CV_PHONE, DIGEST_TO),
+# never from this public file. The evidence lines below are professional
+# facts only — no employer names, no contact details. Delete any you dislike.
+cover_letter:
+  enabled: true
+  languages: ["en", "ar"]
+  linkedin_message: true
+  ats_keywords: true
+  max_letters: 20
+  years_experience: 6
+  degrees: "My MA in Conference Interpreting and my degree in Law"
+  evidence:
+    admin:
+      - "preparing and reviewing memoranda of association, powers of attorney and no-objection certificates"
+      - "coordinating with clients to clarify requirements and deadlines"
+      - "maintaining corporate records and official correspondence"
+    legal_docs:
+      - "drafting and reviewing contracts and official legal correspondence"
+      - "translating contracts between English and Arabic without loss of legal meaning"
+      - "controlling document versions, approvals and archiving"
+    translation:
+      - "translating contracts, official documents and published non-fiction between English and Arabic"
+      - "conference interpreting, consecutive and simultaneous"
+      - "terminology consistency, revision and linguistic quality control"
+    language:
+      - "editorial quality control for a publishing house"
+      - "translating and editing published books from English into Arabic"
+      - "proofreading and maintaining consistency of style and terminology"
+    coordination:
+      - "acting as the point of contact between clients and internal teams"
+      - "tracking requests to completion under deadline pressure"
+      - "scheduling meetings and keeping records accurate"
+  evidence_ar:
+    admin:
+      - "إعداد ومراجعة عقود التأسيس والوكالات ورسائل عدم الممانعة"
+      - "التنسيق مع العملاء لتوضيح المتطلبات والمواعيد النهائية"
+      - "حفظ السجلات الرسمية والمراسلات ومتابعتها"
+    legal_docs:
+      - "صياغة ومراجعة العقود والمراسلات القانونية الرسمية"
+      - "ترجمة العقود بين العربية والإنجليزية دون إخلال بالمعنى القانوني"
+      - "ضبط نسخ المستندات والاعتمادات والأرشفة"
+    translation:
+      - "ترجمة العقود والوثائق الرسمية والكتب غير الروائية بين الإنجليزية والعربية"
+      - "الترجمة الفورية والتتبعية وترجمة المؤتمرات"
+      - "توحيد المصطلحات والمراجعة وضبط الجودة اللغوية"
+    language:
+      - "ضبط الجودة التحريرية في دار نشر"
+      - "ترجمة وتحرير كتب منشورة من الإنجليزية إلى العربية"
+      - "التدقيق اللغوي والحفاظ على اتساق الأسلوب والمصطلح"
+    coordination:
+      - "العمل كنقطة اتصال بين العملاء والفرق الداخلية"
+      - "متابعة الطلبات حتى إنجازها تحت ضغط المواعيد"
+      - "تنظيم الاجتماعات ودقة السجلات"
+  # Curated professional vocabulary for the ATS check. Only these terms are
+  # reported, so the output is a real skill gap — not random words from the
+  # advert like "behalf" or "looking".
+  ats_vocabulary:
+    - Trados
+    - SDL
+    - memoQ
+    - Memsource
+    - Phrase
+    - Wordfast
+    - Across
+    - CAT tools
+    - translation memory
+    - terminology
+    - glossary
+    - subtitling
+    - subtitles
+    - captioning
+    - post-editing
+    - MTPE
+    - localization
+    - localisation
+    - transcreation
+    - proofreading
+    - copywriting
+    - style guide
+    - quality assurance
+    - linguistic quality
+    - simultaneous interpreting
+    - consecutive interpreting
+    - legal translation
+    - technical translation
+    - power of attorney
+    - memorandum of association
+    - contract drafting
+    - contract review
+    - document control
+    - records management
+    - archiving
+    - compliance
+    - due diligence
+    - notarisation
+    - notary
+    - minute taking
+    - calendar management
+    - travel arrangements
+    - expense reports
+    - purchase order
+    - invoice processing
+    - vendor management
+    - stakeholder management
+    - CRM
+    - ERP
+    - SAP
+    - SharePoint
+    - MS Office
+    - Excel
+    - Outlook
+    - PowerPoint
+    - Word
+    - Arabic
+    - English
+    - bilingual
